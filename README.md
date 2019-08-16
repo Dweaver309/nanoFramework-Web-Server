@@ -9,4 +9,3 @@ The web server runs on it's own thread so it is not blocked by the request proce
 
 The server is used by typing in the web server's assigned IP address into any web browser.
 
-Source Code:https://github.com/Dweaver309/nanoFramework-Web-Server
