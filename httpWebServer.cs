@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -19,34 +19,34 @@ namespace Webserver
     /// </summary>
     class HttpWebServer : IDisposable
     {
-        private  Socket socket = null;
-      
-        public  Socket clientSocket = null;
+        private Socket socket = null;
+
+        public Socket clientSocket = null;
 
         public string RequestString = string.Empty;
 
         public delegate void dgEventRaiser();
 
-        public  event dgEventRaiser ServerRequest;
-        
+        public event dgEventRaiser ServerRequest;
+
         private string _SSID = string.Empty;
 
         private string _Password = string.Empty;
 
-        private   Double _TimeOffSet = 0;
+        private Double _TimeOffSet = 0;
 
         /// <summary>
         /// Constructor for creating the web server
         /// Example: HttpWebServer  webServer = new HttpWebServer("SSID", "password", -4);
         /// </summary>
-        public HttpWebServer( string SSID, string Password, Double TimeOffSet = -5)
+        public HttpWebServer(string SSID, string Password, Double TimeOffSet = -5)
         {
             _SSID = SSID;
 
             _Password = Password;
 
             _TimeOffSet = TimeOffSet;
-              
+
             ConnectNetwork();
 
             // Initialize Socket class
@@ -62,14 +62,14 @@ namespace Webserver
 
             // SMTP connects automatically to get time
             Rtc.SetSystemTime(DateTime.UtcNow.AddHours(_TimeOffSet));
-            
+
             Console.WriteLine("System time is:" + DateTime.UtcNow.ToString());
 
             // Create and start a thead for listening for server requests
             Thread tListenforRequest = new Thread(ListenForRequest);
-                   
+
             tListenforRequest.Start();
-          
+
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Webserver
         /// decoded into the RequestSring 
         /// The event can be consumed from another class  
         /// </summary>
-        private  void ListenForRequest()
+        private void ListenForRequest()
         {
             while (true)
             {
@@ -88,7 +88,7 @@ namespace Webserver
                     IPEndPoint clientIP = clientSocket.RemoteEndPoint as IPEndPoint;
 
                     EndPoint clientEndPoint = clientSocket.RemoteEndPoint;
-                    
+
                     int bytesReceived = clientSocket.Available;
 
                     if (bytesReceived > 0)
@@ -103,9 +103,9 @@ namespace Webserver
 
                         // Raise event
                         ServerRequest();
-                       
+
                         Thread.Sleep(150);
-                       
+
                     }
                 }
             }
@@ -114,7 +114,7 @@ namespace Webserver
         /// <summary>
         /// Connect to the SSID network and login using the Password
         /// </summary>
-        private  void ConnectNetwork()
+        private void ConnectNetwork()
         {
             NetworkInterface[] nis = NetworkInterface.GetAllNetworkInterfaces();
 
@@ -126,21 +126,39 @@ namespace Webserver
 
                 if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
                 {
-                    
+
                     // Network interface is Wi-Fi
                     Console.WriteLine("Network connection is: Wi-Fi");
 
                     Wireless80211Configuration wc = Wireless80211Configuration.GetAllWireless80211Configurations()[ni.SpecificConfigId];
-                   
-                        wc.Ssid = _SSID;
 
+                    // wc.Ssid = _SSID;
+
+                    //  wc.Password = _Password;
+                    if (wc.Ssid != _SSID && wc.Password != _Password)
+                    {
+
+                        // Updated 9/27/2019
+                        wc.Options =
+                                Wireless80211Configuration.ConfigurationOptions.Enable
+                               | Wireless80211Configuration.ConfigurationOptions.AutoConnect;
+
+                        wc.Ssid = _SSID;
                         wc.Password = _Password;
-                 
-                 }
+
+                        // Save so when we reboot it will connect automatically
+                        wc.SaveConfiguration();
+
+                       
+                        // Uncomment to restart
+                        // Power.RebootDevice();
+                    }
+
+                }
 
                 else
                 {
-                    
+
                     // Network interface is Ethernet
                     Console.WriteLine("Network connection is: Ethernet");
 
@@ -172,7 +190,7 @@ namespace Webserver
             {
 
                 NetworkInterface ni = NetworkInterface.GetAllNetworkInterfaces()[0];
-                
+
                 if (ni.IPv4Address != null && ni.IPv4Address.Length > 0)
                 {
 
@@ -180,7 +198,7 @@ namespace Webserver
                     {
 
                         Console.WriteLine($"We have an IP: {ni.IPv4Address}");
-                       
+
                         break;
 
                     }
@@ -192,9 +210,9 @@ namespace Webserver
             }
 
         }
-         
-    
-        ~HttpWebServer()           
+
+
+        ~HttpWebServer()
         {
             Dispose();
         }
@@ -205,7 +223,3 @@ namespace Webserver
         }
     }
 }
-
-
-
-
